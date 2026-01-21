@@ -1,0 +1,125 @@
+================================================================================
+    DIAGRAMA ENTIDAD-RELACIÓN (ER) - SISTEMA E-COMMERCE
+================================================================================
+
+ENTIDADES Y ATRIBUTOS:
+----------------------
+
+1. USUARIOS (users)
+   - id_usuario (PK, SERIAL)
+   - nombre (TEXT, NOT NULL)
+   - email (TEXT, UNIQUE)
+   - creado_en (TIMESTAMP, DEFAULT now())
+
+2. PRODUCTOS (products)
+   - id_producto (PK, SERIAL)
+   - nombre (TEXT, NOT NULL)
+   - precio (NUMERIC(10,2), NOT NULL)
+   - activo (BOOLEAN, DEFAULT TRUE)
+
+3. INVENTARIO (inventory)
+   - id_producto (PK, FK → productos)
+   - stock (INT, CHECK stock >= 0)
+
+4. ORDENES (orders)
+   - id_orden (PK, SERIAL)
+   - id_usuario (FK → usuarios)
+   - fecha (DATE, NOT NULL)
+   - total (NUMERIC(12,2))
+
+5. ORDEN_ITEMS (order_items)
+   - id_item (PK, SERIAL)
+   - id_orden (FK → ordenes)
+   - id_producto (FK → productos)
+   - cantidad (INT, CHECK cantidad > 0)
+   - precio_unitario (NUMERIC(10,2))
+
+
+RELACIONES:
+-----------
+
+• USUARIOS ──(1:N)──> ORDENES
+  - Un usuario puede tener múltiples órdenes
+  - Una orden pertenece a un solo usuario
+  - ON DELETE RESTRICT (no eliminar usuario si tiene órdenes)
+
+• ORDENES ──(1:N)──> ORDEN_ITEMS
+  - Una orden puede tener múltiples ítems
+  - Un ítem pertenece a una sola orden
+  - ON DELETE CASCADE (eliminar ítems si se elimina la orden)
+
+• PRODUCTOS ──(1:N)──> ORDEN_ITEMS
+  - Un producto puede estar en múltiples ítems de orden
+  - Un ítem de orden tiene un solo producto
+  - ON DELETE RESTRICT (no eliminar producto si está en órdenes)
+
+• PRODUCTOS ──(1:1)──> INVENTARIO
+  - Cada producto tiene exactamente un registro de inventario
+  - Cada registro de inventario corresponde a un producto
+  - ON DELETE CASCADE (eliminar inventario si se elimina el producto)
+
+
+DIAGRAMA TEXTUAL:
+-----------------
+
+┌─────────────┐
+│  USUARIOS   │
+├─────────────┤
+│ id_usuario  │──┐
+│ nombre      │  │
+│ email       │  │ 1:N
+│ creado_en   │  │
+└─────────────┘  │
+                 │
+                 ▼
+           ┌─────────────┐
+           │   ORDENES   │
+           ├─────────────┤
+           │ id_orden    │──┐
+           │ id_usuario  │  │
+           │ fecha       │  │ 1:N
+           │ total       │  │
+           └─────────────┘  │
+                            │
+                            ▼
+                      ┌──────────────┐
+                      │ ORDEN_ITEMS  │
+                      ├──────────────┤
+                      │ id_item      │
+                      │ id_orden     │
+┌─────────────┐       │ id_producto  │
+│  PRODUCTOS  │       │ cantidad     │
+├─────────────┤       │ precio_unit. │
+│ id_producto │───┬──>└──────────────┘
+│ nombre      │   │          ▲
+│ precio      │   │          │ N:1
+│ activo      │   │          │
+└─────────────┘   │
+       │ 1:1      │
+       │          │
+       ▼          │
+┌─────────────┐   │
+│ INVENTARIO  │   │
+├─────────────┤   │
+│ id_producto │   │
+│ stock       │   │
+└─────────────┘   │
+                  │ 1:N
+                  └─────────────┐
+
+
+ÍNDICES SUGERIDOS:
+------------------
+- idx_ordenes_fecha ON ordenes(fecha)
+- idx_ordenes_usuario ON ordenes(id_usuario)
+- idx_orden_items_orden ON orden_items(id_orden)
+- idx_orden_items_producto ON orden_items(id_producto)
+
+
+RESTRICCIONES (CONSTRAINTS):
+----------------------------
+- CHECK: stock >= 0 en inventario
+- CHECK: cantidad > 0 en orden_items
+- UNIQUE: email en usuarios
+- PRIMARY KEYS en todas las tablas
+- FOREIGN KEYS con integridad referencial
